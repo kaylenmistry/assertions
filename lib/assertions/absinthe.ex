@@ -89,7 +89,7 @@ defmodule Assertions.Absinthe do
     """
     @spec assert_response_equals(module(), String.t(), map(), Keyword.t()) :: :ok | no_return()
     def assert_response_equals(schema, document, expected_response, options) do
-      ExUnit.Assertions.assert {:ok, %{data: response}} = Absinthe.run(document, schema, options)
+      ExUnit.Assertions.assert({:ok, %{data: response}} = Absinthe.run(document, schema, options))
       Assertions.assert_maps_equal(response, expected_response, Map.keys(response))
     end
 
@@ -112,8 +112,10 @@ defmodule Assertions.Absinthe do
             :ok | no_return()
     defmacro assert_response_matches(schema, document, options, do: expr) do
       quote do
-        ExUnit.Assertions.assert {:ok, %{data: unquote(expr)}} =
-                Absinthe.run(unquote(document), unquote(schema), unquote(options))
+        ExUnit.Assertions.assert(
+          {:ok, %{data: unquote(expr)}} =
+            Absinthe.run(unquote(document), unquote(schema), unquote(options))
+        )
       end
     end
 
@@ -127,7 +129,7 @@ defmodule Assertions.Absinthe do
     # We can't use the struct expansion directly here, because then it becomes a compile-time
     # dependency and will make compilation fail for projects that doesn't use Absinthe.
     defp get_fields(%struct{fields: fields} = type, schema, nesting)
-        when struct == Absinthe.Type.Interface do
+         when struct == Absinthe.Type.Interface do
       interface_fields =
         Enum.reduce(fields, [], fn {_, value}, acc ->
           case fields_for(schema, value.type, nesting - 1) do
@@ -194,10 +196,13 @@ defmodule Assertions.Absinthe do
     end
 
     defp format_fields({interface_fields, implementor_fields}, type, left_pad, schema)
-        when is_list(interface_fields) do
+         when is_list(interface_fields) do
       interface_fields =
         interface_fields
-        |> Enum.reduce({["#{camelize(type)} {\n"], left_pad + 2}, &do_format_fields(&1, &2, schema))
+        |> Enum.reduce(
+          {["#{camelize(type)} {\n"], left_pad + 2},
+          &do_format_fields(&1, &2, schema)
+        )
         |> elem(0)
 
       implementor_fields =
@@ -215,7 +220,10 @@ defmodule Assertions.Absinthe do
     defp format_fields(fields, type, left_pad, schema) do
       fields =
         fields
-        |> Enum.reduce({["#{camelize(type)} {\n"], left_pad + 2}, &do_format_fields(&1, &2, schema))
+        |> Enum.reduce(
+          {["#{camelize(type)} {\n"], left_pad + 2},
+          &do_format_fields(&1, &2, schema)
+        )
         |> elem(0)
 
       Enum.reverse(["}\n", padding(left_pad) | fields])
@@ -241,7 +249,7 @@ defmodule Assertions.Absinthe do
     end
 
     defp merge_overrides({key, replacement_key}, fields)
-        when is_atom(key) and is_binary(replacement_key) do
+         when is_atom(key) and is_binary(replacement_key) do
       Enum.map(fields, fn
         ^key -> replacement_key
         {^key, value} -> {replacement_key, value}
